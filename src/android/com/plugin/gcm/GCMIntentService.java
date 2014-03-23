@@ -1,5 +1,11 @@
 package com.plugin.gcm;
 
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -9,6 +15,8 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.os.Bundle;
 import android.support.v4.app.NotificationCompat;
 import android.util.Log;
@@ -90,42 +98,74 @@ public class GCMIntentService extends GCMBaseIntentService {
 		notificationIntent.putExtra("pushBundle", extras);
 
 		PendingIntent contentIntent = PendingIntent.getActivity(this, 0, notificationIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+				
+		//Download custom notification icon with the GCM variable 'icon'
+		
+		Bitmap myBitmap = null;
+		String customIconUrl= null;
+		customIconUrl=extras.getString("icon");
+		
+		  try {
+		        URL url = new URL(customIconUrl);
+		        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+		        connection.setDoInput(true);
+		        connection.connect();
+		        InputStream input = connection.getInputStream();
+		        myBitmap = BitmapFactory.decodeStream(input);
+		      
+		    } catch (IOException e) {
+		        e.printStackTrace();
+		      
+		    }
+		
+		
+		//Added setLargeIcon to downloaded image
 		
 		NotificationCompat.Builder mBuilder =
 			new NotificationCompat.Builder(context)
 				.setDefaults(Notification.DEFAULT_ALL)
 				.setSmallIcon(context.getApplicationInfo().icon)
+				.setLargeIcon(myBitmap)
 				.setWhen(System.currentTimeMillis())
 				.setContentTitle(extras.getString("title"))
-				.setTicker(extras.getString("title"))
 				.setContentIntent(contentIntent)
 				.setAutoCancel(true);
 
 		String message = extras.getString("message");
 		if (message != null) {
 			mBuilder.setContentText(message);
+			
+			//Added message to ticker when message is set
+			mBuilder.setTicker(extras.getString("title") + "\n" + message);
+			
+			//BigText support added so users can expand notifications
+			mBuilder.setStyle(new NotificationCompat.BigTextStyle()
+			 .bigText(message));
 		} else {
 			mBuilder.setContentText("<missing message content>");
+			mBuilder.setTicker(extras.getString("title"));
 		}
 
+		
 		String msgcnt = extras.getString("msgcnt");
 		if (msgcnt != null) {
 			mBuilder.setNumber(Integer.parseInt(msgcnt));
 		}
-		
+
 		int notId = NOTIFICATION_ID;
- 		
- 		try {
- 			notId = Integer.parseInt(extras.getString("notId"));
- 		}
- 		catch(NumberFormatException e) {
- 			Log.e(TAG, "Number format exception - Error parsing Notification ID: " + e.getMessage());
- 		}
- 		catch(Exception e) {
- 			Log.e(TAG, "Number format exception - Error parsing Notification ID" + e.getMessage());
- 		}
- 		
- 		mNotificationManager.notify((String) appName, notId, mBuilder.build());	
+		
+		try {
+			notId = Integer.parseInt(extras.getString("notId"));
+		}
+		catch(NumberFormatException e) {
+			Log.e(TAG, "Number format exception - Error parsing Notification ID: " + e.getMessage());
+		}
+		catch(Exception e) {
+			Log.e(TAG, "Number format exception - Error parsing Notification ID" + e.getMessage());
+		}
+		
+		mNotificationManager.notify((String) appName, notId, mBuilder.build());
+		
 	}
 	
 	private static String getAppName(Context context)
