@@ -26,6 +26,9 @@ import com.google.android.gcm.GCMBaseIntentService;
 @SuppressLint("NewApi")
 public class GCMIntentService extends GCMBaseIntentService {
 
+	/* Relevant only if you used theNewMr code for multiple notifications here - https://github.com/thenewmr/PushPlugin/commit/728e975442e45668b7d809aec028396a9b023dfa
+	Re-Added this line to set a default NOTIFICATION_ID -- this is used for the dismissal of notifications if the notId isn't set
+	Make sure the variable NOTIFICATION_ID is set like this: */
 	public static final int NOTIFICATION_ID = 237;
 	private static final String TAG = "GCMIntentService";
 	
@@ -72,20 +75,45 @@ public class GCMIntentService extends GCMBaseIntentService {
 		Bundle extras = intent.getExtras();
 		if (extras != null)
 		{
-			// if we are in the foreground, just surface the payload, else post it to the statusbar
-            if (PushPlugin.isInForeground()) {
-				extras.putBoolean("foreground", true);
-                PushPlugin.sendExtras(extras);
-			}
-			else {
-				extras.putBoolean("foreground", false);
 
-                // Send a notification if there is a message
-                if (extras.getString("message") != null && extras.getString("message").length() != 0) {
-                    createNotification(context, extras);
-                }
-            }
-        }
+			//Added as a way of remotely dismissing notifications
+			
+			String cancelNotificationString = extras.getString("cancelNotification");
+
+			if (cancelNotificationString != null) 
+			{
+				int CurrentNotificationID=NOTIFICATION_ID;
+				String notIdOnMessage = extras.getString("notId");
+				if (notIdOnMessage != null) 
+				{
+					CurrentNotificationID = Integer.parseInt(extras.getString("notId"));
+				}
+
+				NotificationManager mNotificationManagerCancel = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+				mNotificationManagerCancel.cancel((String)getAppName(context), CurrentNotificationID);	
+			}
+
+			else
+			{
+				// if we are in the foreground, just surface the payload, else post it to the statusbar
+				if (PushPlugin.isInForeground()) 
+				{
+					extras.putBoolean("foreground", true);
+					PushPlugin.sendExtras(extras);
+				}
+				else 
+				{
+					extras.putBoolean("foreground", false);
+				
+					// Send a notification if there is a message
+					if (extras.getString("message") != null && extras.getString("message").length() != 0) 
+					{
+						createNotification(context, extras);
+					}
+                
+				}
+            		}
+        	}
 	}
 
 	public void createNotification(Context context, Bundle extras)
@@ -152,6 +180,11 @@ public class GCMIntentService extends GCMBaseIntentService {
 			mBuilder.setNumber(Integer.parseInt(msgcnt));
 		}
 
+		
+		/* Relevant only if you used theNewMr code for multiple notifications here - https://github.com/thenewmr/PushPlugin/commit/728e975442e45668b7d809aec028396a9b023dfa
+		Changed notId default to the value set above for NOTIFICATION_ID -- this is used for the dismissal of notifications if the notId isn't set
+		Make sure the variable notId = NOTIFICATION_ID like this: */
+		
 		int notId = NOTIFICATION_ID;
 		
 		try {
