@@ -26,6 +26,7 @@ public class PushPlugin extends CordovaPlugin {
 	
 	public static final String REGISTER = "register";
 	public static final String UNREGISTER = "unregister";
+        public static final String CLOSEALL = "closeall";
 	public static final String EXIT = "exit";
 
 	private static CordovaWebView gWebView;
@@ -86,6 +87,14 @@ public class PushPlugin extends CordovaPlugin {
 			Log.v(TAG, "UNREGISTER");
 			result = true;
 			callbackContext.success();
+                } else if (CLOSEALL.equals(action)) {
+
+                        GCMIntentService.closeAllNotifications(getApplicationContext());
+
+                        Log.v(TAG, "CLOSEALL");
+                        result = true;
+                        callbackContext.success();
+
 		} else {
 			result = false;
 			Log.e(TAG, "Invalid action : " + action);
