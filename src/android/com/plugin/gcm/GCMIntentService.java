@@ -20,7 +20,6 @@ import android.graphics.BitmapFactory;
 import android.os.Bundle;
 import android.support.v4.app.NotificationCompat;
 import android.util.Log;
-import android.media.AudioManager;
 
 import com.google.android.gcm.GCMBaseIntentService;
 
@@ -32,7 +31,7 @@ public class GCMIntentService extends GCMBaseIntentService {
 	Make sure the variable NOTIFICATION_ID is set like this: */
 	public static final int NOTIFICATION_ID = 237;
 	private static final String TAG = "GCMIntentService";
-
+	
 	public GCMIntentService() {
 		super("GCMIntentService");
 	}
@@ -78,39 +77,40 @@ public class GCMIntentService extends GCMBaseIntentService {
 		{
 
 			//Added as a way of remotely dismissing notifications
+			
 			String cancelNotificationString = extras.getString("cancelNotification");
 
-			if (cancelNotificationString != null)
+			if (cancelNotificationString != null) 
 			{
 				int CurrentNotificationID=NOTIFICATION_ID;
 				String notIdOnMessage = extras.getString("notId");
-				if (notIdOnMessage != null)
+				if (notIdOnMessage != null) 
 				{
 					CurrentNotificationID = Integer.parseInt(extras.getString("notId"));
 				}
 
 				NotificationManager mNotificationManagerCancel = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
-				mNotificationManagerCancel.cancel((String)getAppName(context), CurrentNotificationID);
+				mNotificationManagerCancel.cancel((String)getAppName(context), CurrentNotificationID);	
 			}
 
 			else
 			{
 				// if we are in the foreground, just surface the payload, else post it to the statusbar
-				if (PushPlugin.isInForeground())
+				if (PushPlugin.isInForeground()) 
 				{
 					extras.putBoolean("foreground", true);
 					PushPlugin.sendExtras(extras);
 				}
-				else
+				else 
 				{
 					extras.putBoolean("foreground", false);
-
+				
 					// Send a notification if there is a message
-					if (extras.getString("message") != null && extras.getString("message").length() != 0)
+					if (extras.getString("message") != null && extras.getString("message").length() != 0) 
 					{
 						createNotification(context, extras);
 					}
-
+                
 				}
             		}
         	}
@@ -126,12 +126,13 @@ public class GCMIntentService extends GCMBaseIntentService {
 		notificationIntent.putExtra("pushBundle", extras);
 
 		PendingIntent contentIntent = PendingIntent.getActivity(this, 0, notificationIntent, PendingIntent.FLAG_UPDATE_CURRENT);
-
+				
 		//Download custom notification icon with the GCM variable 'icon'
+		
 		Bitmap myBitmap = null;
 		String customIconUrl= null;
 		customIconUrl=extras.getString("icon");
-
+		
 		  try {
 		        URL url = new URL(customIconUrl);
 		        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
@@ -139,23 +140,18 @@ public class GCMIntentService extends GCMBaseIntentService {
 		        connection.connect();
 		        InputStream input = connection.getInputStream();
 		        myBitmap = BitmapFactory.decodeStream(input);
+		      
 		    } catch (IOException e) {
 		        e.printStackTrace();
+		      
 		    }
-
-		// Set the defaults for notifications
-                int defaults = Notification.DEFAULT_ALL;
-                if (extras.getString("defaults") != null) {
-                        try {
-                                defaults = Integer.parseInt(extras.getString("defaults"));
-                        } catch (NumberFormatException e) {}
-                }
-
+		
+		
 		//Added setLargeIcon to downloaded image
+		
 		NotificationCompat.Builder mBuilder =
 			new NotificationCompat.Builder(context)
- 				// Disable sound notification during a call when `silentInCall` is passed, vibrate only.
-				.setDefaults((extras.getString("silentInCall") != null && inActiveCall(context)?Notification.DEFAULT_VIBRATE:defaults))
+				.setDefaults(Notification.DEFAULT_ALL)
 				.setSmallIcon(context.getApplicationInfo().icon)
 				.setLargeIcon(myBitmap)
 				.setWhen(System.currentTimeMillis())
@@ -166,10 +162,10 @@ public class GCMIntentService extends GCMBaseIntentService {
 		String message = extras.getString("message");
 		if (message != null) {
 			mBuilder.setContentText(message);
-
+			
 			//Added message to ticker when message is set
 			mBuilder.setTicker(extras.getString("title") + "\n" + message);
-
+			
 			//BigText support added so users can expand notifications
 			mBuilder.setStyle(new NotificationCompat.BigTextStyle()
 			 .bigText(message));
@@ -178,16 +174,19 @@ public class GCMIntentService extends GCMBaseIntentService {
 			mBuilder.setTicker(extras.getString("title"));
 		}
 
+		
 		String msgcnt = extras.getString("msgcnt");
 		if (msgcnt != null) {
 			mBuilder.setNumber(Integer.parseInt(msgcnt));
 		}
 
+		
 		/* Relevant only if you used theNewMr code for multiple notifications here - https://github.com/thenewmr/PushPlugin/commit/728e975442e45668b7d809aec028396a9b023dfa
 		Changed notId default to the value set above for NOTIFICATION_ID -- this is used for the dismissal of notifications if the notId isn't set
 		Make sure the variable notId = NOTIFICATION_ID like this: */
+		
 		int notId = NOTIFICATION_ID;
-
+		
 		try {
 			notId = Integer.parseInt(extras.getString("notId"));
 		}
@@ -197,9 +196,9 @@ public class GCMIntentService extends GCMBaseIntentService {
 		catch(Exception e) {
 			Log.e(TAG, "Number format exception - Error parsing Notification ID" + e.getMessage());
 		}
-
+		
 		mNotificationManager.notify((String) appName, notId, mBuilder.build());
-
+		
 	}
 
 	public static void closeAllNotifications(Context context)
@@ -207,25 +206,20 @@ public class GCMIntentService extends GCMBaseIntentService {
                 NotificationManager mNotificationManager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
                 mNotificationManager.cancelAll();
         }
-
+	
 	private static String getAppName(Context context)
 	{
-		CharSequence appName =
+		CharSequence appName = 
 				context
 					.getPackageManager()
 					.getApplicationLabel(context.getApplicationInfo());
-
+		
 		return (String)appName;
 	}
-
+	
 	@Override
 	public void onError(Context context, String errorId) {
 		Log.e(TAG, "onError - errorId: " + errorId);
 	}
 
-	// Detect if there is an active call via AudioManager
-	public static boolean inActiveCall(Context context) {
-   		AudioManager manager = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
- 		return (manager.getMode() == AudioManager.MODE_IN_CALL);
-	}
 }
